@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FOSSAN Admin Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCaRvUuvW9TyNUV7YLd0EXa8J0PS28V1BY",
+    authDomain: "fossan-election-2026.firebaseapp.com",
+    projectId: "fossan-election-2026",
+    storageBucket: "fossan-election-2026.firebasestorage.app",
+    messagingSenderId: "709609989065",
+    appId: "1:709609989065:web:7dd69dc5e9909da69a3e18"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window._db = db;
+  window._col = collection;
+  window._getDocs = getDocs;
+  window._doc = doc;
+  window._deleteDoc = deleteDoc;
+  window.firebaseReady = true;
+  window.addEventListener('DOMContentLoaded', () => checkPassword());
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:#080c10;color:#e8edf2;min-height:100vh;}
+.wrap{max-width:600px;margin:0 auto;padding:16px;}
+
+/* LOGIN */
+.login-card{background:#0f1923;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:32px 24px;margin-top:60px;text-align:center;}
+.login-card h1{font-family:'Bebas Neue',sans-serif;font-size:48px;background:linear-gradient(135deg,#FFD600,#00b341);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px;}
+.login-card p{color:#6b7a8d;font-size:14px;font-weight:700;margin-bottom:24px;}
+.login-card input{width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:13px;padding:14px 16px;color:#fff;font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;outline:none;margin-bottom:12px;}
+.login-card input:focus{border-color:#FFD600;}
+.btn-yellow{width:100%;padding:15px;border-radius:13px;background:linear-gradient(135deg,#FFD600,#ffaa00);color:#000;font-family:'Nunito',sans-serif;font-size:15px;font-weight:900;cursor:pointer;border:none;text-transform:uppercase;letter-spacing:1px;}
+.err{color:#ff5555;font-size:13px;font-weight:800;margin-top:8px;display:none;}
+
+/* DASHBOARD */
+.dashboard{display:none;}
+.header{text-align:center;padding:24px 0 16px;}
+.header h1{font-family:'Bebas Neue',sans-serif;font-size:42px;color:#FFD600;}
+.header p{color:#6b7a8d;font-size:13px;font-weight:700;}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.stat{background:#0f1923;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px;text-align:center;}
+.stat .num{font-family:'Bebas Neue',sans-serif;font-size:38px;color:#00b341;line-height:1;}
+.stat .lbl{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#6b7a8d;margin-top:4px;}
+.stat .num.yellow{color:#FFD600;}
+
+.toolbar{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.btn-green{padding:11px 18px;border-radius:10px;background:linear-gradient(135deg,#00b341,#00d94f);color:#000;font-family:'Nunito',sans-serif;font-size:13px;font-weight:900;cursor:pointer;border:none;text-transform:uppercase;letter-spacing:1px;}
+.btn-export{padding:11px 18px;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:900;cursor:pointer;border:none;text-transform:uppercase;letter-spacing:1px;}
+.btn-ghost2{padding:11px 18px;border-radius:10px;background:transparent;border:1.5px solid rgba(255,255,255,.1);color:#6b7a8d;font-family:'Nunito',sans-serif;font-size:13px;font-weight:900;cursor:pointer;}
+
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap input{width:100%;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.09);border-radius:12px;padding:12px 16px 12px 42px;color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;}
+.search-wrap input:focus{border-color:#FFD600;}
+.search-wrap .si{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#6b7a8d;}
+
+.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid rgba(255,255,255,.07);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:11px 14px;color:#6b7a8d;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.03);}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-weight:700;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:900;padding:3px 10px;border-radius:100px;}
+.b200{background:rgba(255,214,0,.12);color:#FFD600;}
+.b300{background:rgba(0,179,65,.12);color:#00b341;}
+.del-btn{background:rgba(232,0,13,.12);border:1px solid rgba(232,0,13,.2);color:#ff5555;padding:5px 10px;border-radius:8px;font-size:11px;font-weight:900;cursor:pointer;}
+
+.loading{text-align:center;padding:32px;color:#6b7a8d;font-weight:700;}
+.spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.08);border-top-color:#00b341;border-radius:50%;animation:rot .75s linear infinite;margin:0 auto 12px;}
+@keyframes rot{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- LOGIN -->
+  <div id="loginSection">
+    <div class="login-card">
+      <h1>FOSSAN</h1>
+      <p>🔐 Electoral Committee Admin Viewer</p>
+      <input type="password" id="pwInput" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')checkPassword()"/>
+      <div class="err" id="pwErr">⚠ Incorrect password!</div>
+      <button class="btn-yellow" onclick="checkPassword()">Enter Dashboard →</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="header">
+      <h1>REGISTRATIONS</h1>
+      <p id="lastUpdated">Loading...</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num" id="st-total">0</div><div class="lbl">Total</div></div>
+      <div class="stat"><div class="num yellow" id="st-200">0</div><div class="lbl">200 Level</div></div>
+      <div class="stat"><div class="num" id="st-300">0</div><div class="lbl">300 Level</div></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-green" onclick="loadData()">↻ Refresh</button>
+      <button class="btn-export" onclick="exportCSV()">📥 Export CSV</button>
+      <button class="btn-ghost2" onclick="logout()">✕ Logout</button>
+    </div>
+
+    <div class="search-wrap">
+      <span class="si">🔍</span>
+      <input type="text" id="searchInput" placeholder="Search by name, reg number or level..." oninput="filterTable()"/>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Full Name</th>
+            <th>Reg Number</th>
+            <th>Email</th>
+            <th>Level</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="6"><div class="loading"><div class="spin"></div>Loading students...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ADMIN_PW = 'FOSSANEC12#';
+let allData = [];
+
+function checkPassword() {
+  const pw = document.getElementById('pwInput').value;
+  if (!pw) return;
+  if (pw !== ADMIN_PW) {
+    document.getElementById('pwErr').style.display = 'block';
+    return;
+  }
+  document.getElementById('loginSection').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  // Wait for Firebase to be ready
+  if (window.firebaseReady && window._db) {
+    loadData();
+  } else {
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spin"></div>Connecting to database...</div></td></tr>';
+    let attempts = 0;
+    const wait = setInterval(() => {
+      attempts++;
+      if (window.firebaseReady && window._db) {
+        clearInterval(wait);
+        loadData();
+      } else if (attempts > 20) {
+        clearInterval(wait);
+        document.getElementById('tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ff5555;padding:24px;">⚠ Could not connect. Check your internet and refresh!</td></tr>';
+      }
+    }, 300);
+  }
+}
+
+function logout() {
+  document.getElementById('loginSection').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('pwInput').value = '';
+}
+
+async function loadData() {
+  document.getElementById('tbody').innerHTML = '<tr><td colspan="6"><div class="loading"><div class="spin"></div>Loading students...</div></td></tr>';
+  try {
+    const snap = await window._getDocs(window._col(window._db, 'registeredVoters'));
+    allData = [];
+    snap.forEach(d => allData.push({ id: d.id, ...d.data() }));
+    allData.sort((a, b) => (b.registeredAt?.seconds || 0) - (a.registeredAt?.seconds || 0));
+
+    const l200 = allData.filter(r => r.level === '200L').length;
+    const l300 = allData.filter(r => r.level === '300L').length;
+    document.getElementById('st-total').textContent = allData.length;
+    document.getElementById('st-200').textContent = l200;
+    document.getElementById('st-300').textContent = l300;
+    document.getElementById('lastUpdated').textContent = `Last updated: ${new Date().toLocaleTimeString('en-NG')}`;
+
+    renderTable(allData);
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;color:#ff5555;padding:24px;">Error loading data. Check your internet! ⚠</td></tr>`;
+  }
+}
+
+function renderTable(list) {
+  const tb = document.getElementById('tbody');
+  if (!list.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6b7a8d;padding:24px;">No students found.</td></tr>';
+    return;
+  }
+  tb.innerHTML = list.map((r, i) => `
+    <tr>
+      <td style="color:#6b7a8d;">${i+1}</td>
+      <td style="font-weight:800;">${r.name || '—'}</td>
+      <td style="color:#FFD600;font-size:12px;">${r.regNumber || '—'}</td>
+      <td style="color:#6b7a8d;font-size:11px;">${r.email || '—'}</td>
+      <td><span class="badge ${r.level === '200L' ? 'b200' : 'b300'}">${r.level || '—'}</span></td>
+      <td><button class="del-btn" onclick="deleteStudent('${r.id}','${r.name}')">✕</button></td>
+    </tr>`).join('');
+}
+
+window.filterTable = function() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allData.filter(r =>
+    (r.name||'').toLowerCase().includes(q) ||
+    (r.regNumber||'').toLowerCase().includes(q) ||
+    (r.level||'').toLowerCase().includes(q) ||
+    (r.email||'').toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+};
+
+window.deleteStudent = async function(id, name) {
+  if (!confirm(`Remove ${name} from registrations?`)) return;
+  try {
+    await window._deleteDoc(window._doc(window._db, 'registeredVoters', id));
+    loadData();
+  } catch(e) { alert('Error: ' + e.message); }
+};
+
+window.exportCSV = function() {
+  if (!allData.length) { alert('No data to export!'); return; }
+  const headers = ['Full Name', 'Email', 'Reg Number', 'Level'];
+  const rows = allData.map(r => [`"${r.name||''}"`, `"${r.email||''}"`, `"${r.regNumber||''}"`, `"${r.level||''}"`].join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'FOSSAN_Voters_' + new Date().toLocaleDateString('en-NG').replace(/\//g,'-') + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+</script>
+</body>
+</html>
